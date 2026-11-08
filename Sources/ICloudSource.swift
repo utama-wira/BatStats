@@ -87,6 +87,8 @@ enum ICloudSource {
             level = number(text.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         guard var l = level else { return nil }
+        // Pintasan yang tidak sengaja dijalankan di Mac tidak boleh muncul sebagai iPhone.
+        if model.lowercased().contains("mac") { return nil }
         if l > 0, l <= 1 { l *= 100 }   // beberapa versi iOS memberi 0.85, bukan 85
         let isPad = (model + " " + name).lowercased().contains("ipad")
         return ICloudReading(name: name, level: Int(l.rounded()), charging: charging, isPad: isPad, updated: modified)

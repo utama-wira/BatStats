@@ -8,6 +8,8 @@ Dengan sumber iCloud, BatStats tetap bisa menampilkan baterai iPhone/iPad **wala
 
 Pemasangan cukup sekali per perangkat, sekitar 5 menit. Lakukan di iPhone, lalu ulangi di iPad.
 
+> **Cara cepat:** di Mac, jalankan `python3 shortcut/buat_pintasan.py`. Skrip ini membuat file `Kirim Baterai ke BatStats.shortcut` yang sudah ditandatangani atas Apple ID kamu. Salin file itu ke iCloud Drive, buka dari app **File** di iPhone, lalu ketuk **Tambahkan Pintasan**. Setelah itu langsung lompat ke Langkah 2. Versi file ini belum mengirim status mengisi daya. Kalau perlu, tambahkan tindakan *Sedang Mengisi Daya* ke Kamus dengan kunci `charging` (Boolean).
+
 ## Syarat
 
 - iCloud Drive aktif di iPhone/iPad dan di Mac, dengan Apple ID yang sama.

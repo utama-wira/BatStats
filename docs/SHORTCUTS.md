@@ -8,7 +8,10 @@ Dengan sumber iCloud, BatStats tetap bisa menampilkan baterai iPhone/iPad **wala
 
 Pemasangan cukup sekali per perangkat, sekitar 5 menit. Lakukan di iPhone, lalu ulangi di iPad.
 
-> **Cara cepat:** di Mac, jalankan `python3 shortcut/buat_pintasan.py`. Skrip ini membuat file `Kirim Baterai ke BatStats.shortcut` yang sudah ditandatangani atas Apple ID kamu. Salin file itu ke iCloud Drive, buka dari app **File** di iPhone, lalu ketuk **Tambahkan Pintasan**. Setelah itu langsung lompat ke Langkah 2. Versi file ini belum mengirim status mengisi daya. Kalau perlu, tambahkan tindakan *Sedang Mengisi Daya* ke Kamus dengan kunci `charging` (Boolean).
+> **Cara cepat (disarankan):** di Mac, jalankan
+> `python3 shortcut/buat_pintasan.py --nama "Nama iPhone" --jenis iPhone`
+> (dan sekali lagi dengan `--jenis iPad` untuk iPad). Skrip ini membuat pintasan yang sudah ditandatangani atas Apple ID kamu. Salin ke iCloud Drive, buka dari app **File** di perangkat yang sesuai, ketuk **Tambahkan Pintasan**, lalu lompat ke Langkah 2.
+> Pintasan ini menulis nama dan model sebagai teks tetap, jadi tidak memakai *Dapatkan Detail Perangkat*. Dengan begitu iOS tidak terus memunculkan pop-up "Izinkan … menyimpan item teks ke file?". `--nama` harus sama persis dengan Pengaturan › Umum › Mengenai › Nama.
 
 ## Syarat
 

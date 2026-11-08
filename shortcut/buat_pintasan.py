@@ -2,13 +2,22 @@
 # BatStats — Battery Status
 # Copyright (c) 2026 @utama_wira. Lisensi MIT.
 #
-# Membuat file pintasan "Kirim Baterai ke BatStats" lalu menandatanganinya
+# Membuat pintasan "Kirim Baterai ke BatStats" untuk SATU perangkat, lalu menandatanganinya
 # dengan alat resmi macOS (`shortcuts sign`) agar bisa diimpor di iPhone/iPad.
 #
-#   python3 shortcut/buat_pintasan.py
+#   python3 shortcut/buat_pintasan.py --nama "Nama iPhone" --jenis iPhone
+#   python3 shortcut/buat_pintasan.py --nama "Nama iPad"   --jenis iPad
 #
-# Hasil: shortcut/Kirim Baterai ke BatStats.shortcut
+# --nama  : harus sama dengan Pengaturan › Umum › Mengenai › Nama di perangkat itu,
+#           supaya BatStats menggabungkannya dengan perangkat yang sudah dikenal.
+# --jenis : iPhone atau iPad (juga menjadi nama file: BatStats/iPhone.json / iPad.json)
+#
+# Kenapa nama & file ditulis tetap (bukan diambil dari "Dapatkan Detail Perangkat")?
+# iOS menganggap detail perangkat sebagai data pribadi dan terus memunculkan pop-up
+# "Izinkan … menyimpan item teks ke file?" walau sudah dipilih "Selalu Izinkan".
+# Dengan teks tetap, yang dikirim hanya tingkat baterai — tanpa pop-up berulang.
 
+import argparse
 import os
 import plistlib
 import subprocess
@@ -17,9 +26,15 @@ import tempfile
 import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODE = os.environ.get("MODE", "people-who-know-me")  # "anyone" butuh akses iCloud penuh
-NAME = "Kirim Baterai ke BatStats"
+TITLE = "Kirim Baterai ke BatStats"
 OBJ = "￼"  # penanda posisi variabel di dalam teks
+
+p = argparse.ArgumentParser(description="Buat pintasan BatStats untuk satu perangkat.")
+p.add_argument("--nama", required=True, help="nama perangkat persis seperti di Pengaturan")
+p.add_argument("--jenis", required=True, choices=["iPhone", "iPad"])
+p.add_argument("--mode", default="people-who-know-me", choices=["people-who-know-me", "anyone"],
+               help='mode tanda tangan ("anyone" butuh akses iCloud penuh)')
+args = p.parse_args()
 
 
 def uid():
@@ -31,7 +46,7 @@ def output(u, name):
 
 
 def text(s="", attachments=None):
-    """Teks dengan variabel. attachments: daftar (posisi, uuid, nama_output)."""
+    """Teks, opsional berisi variabel. attachments: daftar (posisi, uuid, nama_output)."""
     return {
         "Value": {
             "string": s,
@@ -45,24 +60,20 @@ def item(item_type, key, value):
     return {"WFItemType": item_type, "WFKey": text(key), "WFValue": value}
 
 
-battery, dev_name, dev_model, dictionary = uid(), uid(), uid(), uid()
+battery, dictionary = uid(), uid()
 TEXT, NUMBER = 0, 3
 
 actions = [
     {"WFWorkflowActionIdentifier": "is.workflow.actions.getbatterylevel",
      "WFWorkflowActionParameters": {"UUID": battery}},
-    {"WFWorkflowActionIdentifier": "is.workflow.actions.getdevicedetails",
-     "WFWorkflowActionParameters": {"UUID": dev_name, "WFDeviceDetail": "Device Name"}},
-    {"WFWorkflowActionIdentifier": "is.workflow.actions.getdevicedetails",
-     "WFWorkflowActionParameters": {"UUID": dev_model, "WFDeviceDetail": "Device Model"}},
     {"WFWorkflowActionIdentifier": "is.workflow.actions.dictionary",
      "WFWorkflowActionParameters": {
          "UUID": dictionary,
          "WFItems": {
              "Value": {"WFDictionaryFieldValueItems": [
-                 item(TEXT, "name", text(OBJ, [(0, dev_name, "Device Name")])),
+                 item(TEXT, "name", text(args.nama)),
                  item(NUMBER, "level", text(OBJ, [(0, battery, "Battery Level")])),
-                 item(TEXT, "model", text(OBJ, [(0, dev_model, "Device Model")])),
+                 item(TEXT, "model", text(args.jenis)),
                  item(TEXT, "source", text("shortcut")),
              ]},
              "WFSerializationType": "WFDictionaryFieldValue",
@@ -72,7 +83,7 @@ actions = [
      "WFWorkflowActionParameters": {
          "WFInput": {"Value": output(dictionary, "Dictionary"), "WFSerializationType": "WFTextTokenAttachment"},
          "WFAskWhereToSave": False,
-         "WFFileDestinationPath": text(f"BatStats/{OBJ}.json", [(len("BatStats/"), dev_name, "Device Name")]),
+         "WFFileDestinationPath": text(f"BatStats/{args.jenis}.json"),
          "WFSaveFileOverwrite": True,
      }},
 ]
@@ -89,15 +100,15 @@ workflow = {
     "WFWorkflowTypes": [],
     "WFQuickActionSurfaces": [],
     "WFWorkflowHasShortcutInputVariables": False,
-    "WFWorkflowName": NAME,
+    "WFWorkflowName": TITLE,
 }
 
-out = os.path.join(HERE, f"{NAME}.shortcut")
+out = os.path.join(HERE, f"{TITLE} ({args.jenis}).shortcut")
 with tempfile.TemporaryDirectory() as tmp:
     unsigned = os.path.join(tmp, "unsigned.shortcut")
     with open(unsigned, "wb") as f:
         plistlib.dump(workflow, f, fmt=plistlib.FMT_BINARY)
-    r = subprocess.run(["shortcuts", "sign", "--mode", MODE, "--input", unsigned, "--output", out],
+    r = subprocess.run(["shortcuts", "sign", "--mode", args.mode, "--input", unsigned, "--output", out],
                        capture_output=True, text=True)
     if r.returncode != 0 or not os.path.exists(out):
         sys.exit(f"Gagal menandatangani: {r.stderr or r.stdout}")

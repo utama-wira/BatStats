@@ -44,7 +44,7 @@ struct PanelView: View {
                         DeviceCard(device: d, history: store.history[d.id] ?? [], low: store.lowThreshold,
                                    expanded: expanded == d.id,
                                    onTap: { toggle(d.id) },
-                                   onForget: d.isMac ? nil : { store.forget(d.id) })
+                                   onForget: (d.isMac || d.id.hasPrefix("icloud:")) ? nil : { store.forget(d.id) })
                     }
                 }
             }
@@ -388,6 +388,28 @@ struct SettingsPanel: View {
             Toggle("Kabari saat baterai penuh", isOn: $store.notifyFull)
             Toggle("Buka otomatis saat login", isOn: $store.launchAtLogin)
 
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Sumber iCloud (lewat Shortcuts)", isOn: $store.useICloud)
+                Text(ICloudSource.isICloudDriveAvailable
+                     ? "Cadangan saat iPhone/iPad jauh dari Mac atau di Wi-Fi publik."
+                     : "iCloud Drive belum aktif di Mac ini.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                if store.useICloud {
+                    HStack(spacing: 12) {
+                        Button("Panduan Shortcuts") {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/utama-wira/BatStats/blob/main/docs/SHORTCUTS.md")!)
+                        }
+                        Button("Buka folder iCloud") {
+                            ICloudSource.ensureFolder()
+                            NSWorkspace.shared.open(ICloudSource.folder)
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .font(.caption)
+                }
+            }
+
             HStack {
                 Button("Tes notifikasi") { store.sendTestNotification() }
                 Button("Cara pakai Wi-Fi") { showHelp = true }
@@ -502,6 +524,7 @@ struct Chip: View {
         case "Wi-Fi": return "wifi"
         case "USB": return "cable.connector"
         case "Offline": return "moon.zzz.fill"
+        case "iCloud": return "icloud.fill"
         default: return "desktopcomputer"
         }
     }
@@ -510,6 +533,7 @@ struct Chip: View {
         case "Wi-Fi": return .blue
         case "USB": return .purple
         case "Offline": return .gray
+        case "iCloud": return .orange
         default: return .teal
         }
     }

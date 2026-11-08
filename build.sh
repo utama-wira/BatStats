@@ -8,7 +8,7 @@
 set -e
 cd "$(dirname "$0")"
 
-VERSION=2.1
+VERSION=2.2
 APP=build/BatStats.app
 rm -rf build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"

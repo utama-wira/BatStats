@@ -122,6 +122,9 @@ if let i = CommandLine.arguments.firstIndex(of: "--snapshot"), i + 1 < CommandLi
 if CommandLine.arguments.contains("--dump") {
     let m = DeviceMonitor.shared
     if let mac = MacBattery.read() { print("Mac: \(mac.level)% — \(mac.statusLine)") }
+    for c in ICloudSource.readAll() {
+        print("iCloud \"\(c.name)\": \(c.level)% charging=\(c.charging) iPad=\(c.isPad) dikirim \(Fmt.time(c.updated))")
+    }
     m.onChange = {
         for r in m.readings.values where r.online {
             print("\(r.deviceClass) \"\(r.name)\": \(r.level)% charging=\(r.charging) wifi=\(r.viaWiFi)")

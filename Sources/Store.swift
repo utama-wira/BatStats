@@ -40,6 +40,20 @@ struct DeviceItem: Identifiable, Equatable {
     var detail: String
     var symbol: String
     var isMac: Bool { id == Store.macID }
+
+    /// Data iCloud dianggap "aktif" selama 3 jam; setelah itu tampil abu-abu.
+    static let iCloudFreshFor: TimeInterval = 3 * 3600
+
+    mutating func apply(_ c: ICloudReading) {
+        level = c.level
+        charging = c.charging
+        full = c.charging && c.level >= 100
+        updated = c.updated
+        online = Date().timeIntervalSince(c.updated) < DeviceItem.iCloudFreshFor
+        connection = "iCloud"
+        let state = c.charging ? "Mengisi daya" : "Memakai baterai"
+        detail = online ? "\(state) · dikirim \(Fmt.time(c.updated))" : "Terakhir lewat iCloud \(Fmt.time(c.updated))"
+    }
 }
 
 enum Fmt {
@@ -102,6 +116,13 @@ final class Store: ObservableObject {
     @Published var notifyLow: Bool { didSet { defaults.set(notifyLow, forKey: "notifyLow"); if notifyLow { askNotificationPermission() } } }
     @Published var notifyFull: Bool { didSet { defaults.set(notifyFull, forKey: "notifyFull"); if notifyFull { askNotificationPermission() } } }
     @Published var launchAtLogin: Bool { didSet { LoginItem.set(launchAtLogin) } }
+    @Published var useICloud: Bool {
+        didSet {
+            defaults.set(useICloud, forKey: "useICloud")
+            if useICloud { ICloudSource.ensureFolder() }
+            reload()
+        }
+    }
 
     var onBarChange: (() -> Void)?
     /// Untuk screenshot publik: sembunyikan nama asli perangkat.
@@ -117,6 +138,8 @@ final class Store: ObservableObject {
         notifyLow = defaults.object(forKey: "notifyLow") as? Bool ?? true
         notifyFull = defaults.object(forKey: "notifyFull") as? Bool ?? false
         launchAtLogin = LoginItem.isEnabled
+        useICloud = defaults.object(forKey: "useICloud") as? Bool ?? true
+        if useICloud { ICloudSource.ensureFolder() }
         if let data = defaults.data(forKey: "history.v1"),
            let h = try? JSONDecoder().decode([String: [Sample]].self, from: data) { history = h }
     }
@@ -135,12 +158,36 @@ final class Store: ObservableObject {
             let b = $1.deviceClass.lowercased().contains("iphone") ? 0 : 1
             return a != b ? a < b : $0.name < $1.name
         }
+        // Sumber iCloud (dari Shortcuts), dikunci per nama perangkat.
+        var cloud: [String: ICloudReading] = [:]
+        if useICloud {
+            for c in ICloudSource.readAll() {
+                let key = Store.key(c.name)
+                if let old = cloud[key], old.updated > c.updated { continue }
+                cloud[key] = c
+            }
+        }
+
         for r in readings {
             let isPad = r.deviceClass.lowercased().contains("ipad")
-            items.append(DeviceItem(id: r.udid, name: r.name, kind: isPad ? "iPad" : "iPhone", level: r.level,
-                                    charging: r.charging && r.online, full: r.fullyCharged && r.online,
-                                    online: r.online, connection: r.online ? (r.viaWiFi ? "Wi-Fi" : "USB") : "Offline",
-                                    updated: r.updated, detail: Store.detail(r), symbol: isPad ? "ipad" : "iphone"))
+            var item = DeviceItem(id: r.udid, name: r.name, kind: isPad ? "iPad" : "iPhone", level: r.level,
+                                  charging: r.charging && r.online, full: r.fullyCharged && r.online,
+                                  online: r.online, connection: r.online ? (r.viaWiFi ? "Wi-Fi" : "USB") : "Offline",
+                                  updated: r.updated, detail: Store.detail(r), symbol: isPad ? "ipad" : "iphone")
+            // USB/Wi-Fi selalu diutamakan. iCloud hanya mengisi saat perangkat tidak terlihat
+            // dan datanya lebih baru dari pembacaan terakhir.
+            if let c = cloud.removeValue(forKey: Store.key(r.name)), !r.online, c.updated > r.updated {
+                item.apply(c)
+            }
+            items.append(item)
+        }
+        // Perangkat yang hanya dikenal lewat iCloud (belum pernah dicolok ke Mac ini).
+        for c in cloud.values.sorted(by: { $0.name < $1.name }) {
+            var item = DeviceItem(id: "icloud:" + Store.key(c.name), name: c.name, kind: c.isPad ? "iPad" : "iPhone",
+                                  level: c.level, charging: false, full: false, online: false, connection: "iCloud",
+                                  updated: c.updated, detail: "", symbol: c.isPad ? "ipad" : "iphone")
+            item.apply(c)
+            items.append(item)
         }
         if demoNames {
             items = items.map { var d = $0; d.name = d.isMac ? "MacBook Air" : "\(d.kind) Saya"; return d }
@@ -152,6 +199,10 @@ final class Store: ObservableObject {
             checkNotifications(d)
         }
         onBarChange?()
+    }
+
+    static func key(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     static func detail(_ r: Reading) -> String {

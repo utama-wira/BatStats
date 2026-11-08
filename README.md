@@ -21,6 +21,7 @@ BatStats adalah aplikasi menu bar kecil untuk macOS. Persentase baterai MacBook,
 - **Panel interaktif:** cincin baterai beranimasi, lencana ⚡ saat mengisi daya, dan peringatan berdenyut saat baterai lemah.
 - **Grafik riwayat 24 jam** untuk setiap perangkat, lengkap dengan angka terendah dan tertinggi.
 - **Tanpa kabel:** membaca iPhone/iPad lewat Wi-Fi yang sama dengan Mac.
+- **Dari mana saja lewat iCloud (opsional):** pasang satu pintasan di iPhone/iPad, maka baterainya tetap terlihat walaupun HP kamu bawa pergi atau sedang di Wi-Fi publik. Lihat [panduan Shortcuts](docs/SHORTCUTS.md).
 - **Notifikasi:** pengingat saat baterai di bawah batas yang kamu pilih (5–50%), dan kabar saat baterai sudah penuh.
 - **Angka terakhir tetap tersimpan:** saat perangkat sedang "tidur" dari jaringan, angka terakhirnya tetap tampil (abu-abu).
 - **Ringan dan tanpa dependensi:** ditulis dengan Swift, tidak perlu Homebrew, tidak ada server, dan tidak ada data yang keluar dari Mac kamu.
@@ -49,16 +50,20 @@ Ikon BatStats akan muncul di menu bar. Buka panel → ⚙︎ → nyalakan **Buka
 3. Centang **"Tampilkan [perangkat] ini saat di Wi-Fi"**, lalu klik **Terapkan**.
 4. Cabut kabel. Selama Mac dan perangkat berada di Wi-Fi yang sama, BatStats tetap bisa membaca baterainya.
 
+Ingin tetap terpantau saat jauh dari Mac? Ikuti [panduan sumber iCloud lewat Shortcuts](docs/SHORTCUTS.md).
+
 > **Tips:** sembunyikan ikon baterai bawaan macOS (System Settings → Menu Bar/Control Center → Battery) supaya hanya BatStats yang tampil.
 
 ## Cara kerja
 
 - **Baterai Mac** dibaca lewat IOKit (`IOPowerSources`), API resmi macOS.
+- **Sumber iCloud** (opsional): iPhone/iPad menulis file kecil lewat Shortcuts ke *iCloud Drive › Shortcuts › BatStats*, lalu BatStats membacanya saat perangkat tidak terlihat lewat USB/Wi-Fi.
 - **Baterai iPhone/iPad** dibaca lewat `MobileDevice.framework`, framework bawaan macOS yang juga dipakai Finder untuk sinkronisasi perangkat. Pembacaan diperbarui setiap 60 detik dan setiap kali panel dibuka.
 
 ## Keterbatasan
 
 - `MobileDevice.framework` adalah framework privat Apple. Karena itu BatStats **tidak bisa masuk Mac App Store**, dan pembaruan macOS di masa depan bisa saja mengubah perilakunya.
+- Wi-Fi publik (bandara, hotel, kafe) biasanya memisahkan perangkat satu sama lain, jadi pembacaan lewat Wi-Fi tidak bisa dilakukan di sana. Pakai kabel, Hotspot Pribadi, atau sumber iCloud.
 - iPhone/iPad kadang memutus Wi-Fi saat layarnya lama mati. Akibatnya angkanya bisa tertinggal beberapa menit sampai perangkat muncul lagi di jaringan.
 - Aplikasi tidak ditandatangani dengan sertifikat Apple Developer. Kalau kamu membagikan file `.app` hasil build ke orang lain, macOS akan menampilkan peringatan saat pertama dibuka (klik kanan → **Open**). Build sendiri dengan `./build.sh` tidak memunculkan masalah ini.
 
@@ -67,6 +72,7 @@ Ikon BatStats akan muncul di menu bar. Buka panel → ⚙︎ → nyalakan **Buka
 ```
 Sources/
   Core.swift        pembaca baterai Mac & iPhone/iPad, login item
+  ICloudSource.swift sumber iCloud (file dari Shortcuts)
   Store.swift       data, riwayat 24 jam, notifikasi
   StatusIcon.swift  gambar ikon menu bar (Cincin / Baterai / Angka)
   Panel.swift       panel interaktif (SwiftUI)

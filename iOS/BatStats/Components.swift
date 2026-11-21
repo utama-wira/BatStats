@@ -46,7 +46,7 @@ struct BigRing: View {
                     .animation(.spring, value: device.level)
                 Text(device.full ? "Penuh" : device.charging ? "Mengisi daya" : isLow ? "Baterai lemah" : device.kind + " ini")
                     .font(.footnote.weight(.medium))
-                    .foregroundStyle(isLow ? .red : .secondary)
+                    .foregroundStyle(isLow ? Color.red : Color.secondary)
             }
         }
         .frame(width: 200, height: 200)

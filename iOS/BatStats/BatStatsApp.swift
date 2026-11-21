@@ -9,7 +9,7 @@ import UserNotifications
 
 @main
 struct BatStatsApp: App {
-    static let refreshTaskID = "io.github.utama-wira.batstats.refresh"
+    nonisolated static let refreshTaskID = "io.github.utama-wira.batstats.refresh"
 
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
@@ -38,7 +38,7 @@ struct BatStatsApp: App {
         }
     }
 
-    static func scheduleRefresh() {
+    nonisolated static func scheduleRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: refreshTaskID)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
         try? BGTaskScheduler.shared.submit(request)

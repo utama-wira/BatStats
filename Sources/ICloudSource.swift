@@ -5,6 +5,9 @@
 // Sumber iCloud: iPhone/iPad menulis baterainya lewat Shortcuts ke
 // iCloud Drive › Shortcuts › BatStats › <nama perangkat>.json
 // Dipakai sebagai cadangan saat perangkat tidak terlihat lewat USB/Wi-Fi.
+//
+// Arah sebaliknya: Mac menulis "Mac - <nama Mac>.json" berisi baterainya sendiri dan
+// perangkat yang sedang terbaca lewat USB/Wi-Fi, supaya BatStats di iPhone/iPad bisa membacanya.
 
 import Foundation
 
@@ -92,5 +95,46 @@ enum ICloudSource {
         if l > 0, l <= 1 { l *= 100 }   // beberapa versi iOS memberi 0.85, bukan 85
         let isPad = (model + " " + name).lowercased().contains("ipad")
         return ICloudReading(name: name, level: Int(l.rounded()), charging: charging, isPad: isPad, updated: modified)
+    }
+}
+
+// MARK: - Kirim baterai Mac ke iCloud (dibaca BatStats versi iPhone/iPad)
+
+extension ICloudSource {
+    private static var lastSignature = ""
+    private static var lastWrite = Date.distantPast
+
+    /// Menulis baterai Mac + perangkat USB/Wi-Fi yang sedang terbaca.
+    /// Hanya menulis saat ada perubahan, atau paling lambat setiap 10 menit sebagai tanda Mac masih menyala.
+    static func publish(mac: DeviceItem, others: [DeviceItem]) {
+        guard isICloudDriveAvailable else { return }
+        let relayed = others.filter { $0.online && ($0.connection == "USB" || $0.connection == "Wi-Fi") }
+        let signature = ([mac] + relayed).map { "\($0.name)|\($0.level)|\($0.charging)|\($0.full)" }.joined(separator: ";")
+        if signature == lastSignature, Date().timeIntervalSince(lastWrite) < 600 { return }
+
+        let now = Date().timeIntervalSince1970
+        let payload: [String: Any] = [
+            "source": "BatStats-Mac",
+            "version": 1,
+            "name": mac.name,
+            "model": "Mac",          // ICloudSource.parse() mengabaikan "Mac", jadi Mac tidak membaca file ini sendiri
+            "level": mac.level,
+            "charging": mac.charging,
+            "full": mac.full,
+            "detail": mac.detail,
+            "updated": now,
+            "devices": relayed.map { d -> [String: Any] in
+                ["name": d.name, "kind": d.kind, "level": d.level, "charging": d.charging, "full": d.full,
+                 "connection": d.connection, "updated": d.updated.timeIntervalSince1970]
+            },
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else { return }
+        ensureFolder()
+        let safe = mac.name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+        let url = folder.appendingPathComponent("Mac - \(safe).json")
+        if (try? data.write(to: url, options: .atomic)) != nil {
+            lastSignature = signature
+            lastWrite = Date()
+        }
     }
 }

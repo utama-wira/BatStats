@@ -27,6 +27,10 @@ BatStats adalah aplikasi menu bar kecil untuk macOS. Persentase baterai MacBook,
 - **Ringan dan tanpa dependensi:** ditulis dengan Swift, tidak perlu Homebrew, tidak ada server, dan tidak ada data yang keluar dari Mac kamu.
 - **Bahasa Indonesia.**
 
+## Versi iPhone & iPad (baru)
+
+BatStats sekarang juga ada untuk **iPhone dan iPad**. Baterai iPhone kamu terbaca langsung, sedangkan Mac dan iPad muncul lewat folder iCloud yang sama. Cincin baterai, grafik 24 jam, dan notifikasi baterai lemah/penuh semuanya ikut. Dipasang lewat Xcode dengan Apple ID biasa, tanpa akun developer berbayar. Lihat [panduan BatStats untuk iPhone](docs/IPHONE.md).
+
 ## Kebutuhan
 
 - macOS 14 (Sonoma) atau lebih baru
@@ -58,6 +62,7 @@ Ingin tetap terpantau saat jauh dari Mac? Ikuti [panduan sumber iCloud lewat Sho
 
 - **Baterai Mac** dibaca lewat IOKit (`IOPowerSources`), API resmi macOS.
 - **Sumber iCloud** (opsional): iPhone/iPad menulis file kecil lewat Shortcuts ke *iCloud Drive › Shortcuts › BatStats*, lalu BatStats membacanya saat perangkat tidak terlihat lewat USB/Wi-Fi.
+- **Untuk BatStats di iPhone**: selama sumber iCloud menyala, Mac menulis `Mac - <nama Mac>.json` (baterai Mac + perangkat yang terbaca lewat USB/Wi-Fi) ke folder yang sama, setiap kali angkanya berubah dan paling lambat tiap 10 menit.
 - **Baterai iPhone/iPad** dibaca lewat `MobileDevice.framework`, framework bawaan macOS yang juga dipakai Finder untuk sinkronisasi perangkat. Pembacaan diperbarui setiap 60 detik dan setiap kali panel dibuka.
 
 ## Keterbatasan
@@ -78,6 +83,9 @@ Sources/
   Panel.swift       panel interaktif (SwiftUI)
   main.swift        titik masuk aplikasi
 build.sh            build & pasang
+iOS/
+  BatStats.xcodeproj  proyek Xcode untuk iPhone & iPad
+  BatStats/           kode SwiftUI versi iPhone (Store, SharedFolder, tampilan)
 ```
 
 Uji cepat dari terminal:

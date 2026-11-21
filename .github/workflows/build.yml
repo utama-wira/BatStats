@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    name: BatStats untuk Mac
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: ./build.sh
+
+  ios:
+    name: BatStats untuk iPhone & iPad
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (Simulator, tanpa tanda tangan)
+        run: |
+          xcodebuild -version
+          xcodebuild -project iOS/BatStats.xcodeproj -target BatStats -configuration Debug \
+            -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build | tail -n 60
+          exit ${PIPESTATUS[0]}

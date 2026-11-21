@@ -2,3 +2,6 @@ build/
 .DS_Store
 *.swp
 shortcut/*.shortcut
+xcuserdata/
+*.xcuserstate
+DerivedData/

@@ -194,6 +194,9 @@ final class Store: ObservableObject {
         }
         devices = items
         hasUntrusted = !monitor.untrusted.isEmpty
+        if useICloud, !demoNames, let mac = items.first(where: { $0.isMac }) {
+            ICloudSource.publish(mac: mac, others: items.filter { !$0.isMac })
+        }
         for d in items where d.online {
             record(d)
             checkNotifications(d)
